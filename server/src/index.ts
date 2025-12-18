@@ -1,19 +1,21 @@
 import express from 'express';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
+import path from 'path';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import prisma from './lib/prisma'; // Your working file
 import authRoutes from './routes/auth.routes'
 import taskRoutes from './routes/task.routes'
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });;
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use('/api/auth', authRoutes)
-app.use('/api/tasks', taskRoutes)
 // app.use('/api/dashboard', taskRoutes)
+
+// "email": "chetan@test.com",
+//     "password": "password123"
 
 
 // Middleware
@@ -30,9 +32,14 @@ app.get('/health', async (req, res) => {
         res.json({ status: "ok", database: "connected" });
     } catch (e) {
         res.status(500).json({ status: "error", database: "disconnected" });
+        console.error(e)
     }
 });
 
 app.listen(PORT, () => {
     console.log(`🚀 Server locked in on port ${PORT}`);
 });
+
+
+app.use('/api/tasks', taskRoutes)
+app.use('/api/auth', authRoutes)

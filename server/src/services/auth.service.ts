@@ -18,7 +18,7 @@ export const AuthService = {
     async register(data: z.infer<typeof registerSchema>) {
         const hashedPassword = await bcrypt.hash(data.password, 10); // 
         return prisma.user.create({
-            data: { ...data, password: hashedPassword },
+            data: { name: data.name, email: data.email, password: hashedPassword },
             select: { id: true, name: true, email: true }
         });
     },
