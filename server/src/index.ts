@@ -6,17 +6,42 @@ import cookieParser from 'cookie-parser';
 import prisma from './lib/prisma'; // Your working file
 import authRoutes from './routes/auth.routes'
 import taskRoutes from './routes/task.routes'
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });;
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const httpServer = createServer(app)
 
-// app.use('/api/dashboard', taskRoutes)
+const io = new Server(httpServer, {
+    cors: {
+        origin: "http://localhost:5173",
+        credentials: true
+    }
+})
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    // Users can join a specific room (e.g., for a specific project or dashboard)
+    socket.on('join-dashboard', () => {
+        socket.join('tasks-room');
+        console.log('User joined tasks-room');
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
+});
+
+
+const PORT = process.env.PORT || 5000;
 
 // "email": "chetan@test.com",
 //     "password": "password123"
-
 
 // Middleware
 app.use(express.json());
@@ -36,7 +61,7 @@ app.get('/health', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
     console.log(`🚀 Server locked in on port ${PORT}`);
 });
 

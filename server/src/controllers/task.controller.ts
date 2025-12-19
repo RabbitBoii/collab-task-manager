@@ -19,6 +19,17 @@ export const TaskController = {
             const data = createTaskSchema.parse(req.body);
             const userId = (req as any).user.userId; // Will come from our verifyToken middleware
             const task = await TaskService.createTask(userId, data);
+
+            const io = req.app.get('io');
+            if (data.assignedToId && data.assignedToId !== userId) {
+                io.emit(`notification-${data.assignedToId}`, {
+                    type: 'TASK_ASSIGNED',
+                    message: `You've been assigned a new task: ${task.title}`,
+                    taskId: task.id,
+                    timestamp: new Date()
+                });
+            }
+
             res.status(201).json(task);
         } catch (err: any) {
             res.status(400).json({ error: err.message || "Validation failed" }); // [cite: 38]
@@ -27,9 +38,19 @@ export const TaskController = {
 
     update: async (req: Request, res: Response) => {
         try {
-            const taskID = req.params.id as string
-            const task = await TaskService.updateTask(taskID, req.body);
+            const taskId = req.params.id as string
+            const task = await TaskService.updateTask(taskId, req.body);
             // NOTE: This is where we will later trigger Socket.io emit! [cite: 25]
+            const io = req.app.get('io');
+
+            io.to('tasks-room').emit('task-updated', task);
+            if (req.body.assignedToId) {
+                io.emit(`notification-${req.body.assignedToId}`, {
+                    message: `New Task Assigned: ${task.title}`,
+                    taskId: task.id,
+                })
+            }
+
             res.json(task);
         } catch (err: any) {
             res.status(400).json({ error: "Update failed" });
